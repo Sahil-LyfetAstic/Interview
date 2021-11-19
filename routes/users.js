@@ -27,24 +27,25 @@ const jwt = require("jsonwebtoken");
 
 //latest middleware for jwt
 
-function verifyToken(){
+function verifyToken(req,res,next){
   const authcookie = req.cookies.authcookie
   jwt.verify(authcookie,"secret_key",(err,data)=>{
+    console.log(data)
     if(err){
       res.sendStatus(403)
     } 
-    else if(data.user){
-     req.user = data.user
+    else if(data){
+     req.user = data
+
       next()
    }
   })
 }
 
 /* GET users listing. */
-router.get("/", function (req, res, next) {
+router.get("/", verifyToken,function (req, res, next) {
   productHelpers.getAllProduct().then((products) => {
-    console.log(req.session)
-    console.log(req.cookies);
+    console.log(req.user)
     res.render("user/home", { user: true, products });
   });
 });
@@ -90,12 +91,12 @@ router.get("/signup", (req, res) => {
 router.post("/login",(req,res)=>{
   userHelper.doLogin(req.body).then((response)=>{
     if(response.password === true){
-      let userObj = {
+      let user = {
         username:response.user.name,
         id:response.user._id
       }
       req.session.user = response.user
-      const token = jwt.sign(userObj,'secret_key')
+      const token = jwt.sign(user,'secret_key')
       res.cookie('authcookie',token,{maxAge:900000,httpOnly:true}).redirect('/')
 
     }
